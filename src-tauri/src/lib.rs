@@ -123,16 +123,20 @@ fn get_omarchy_theme() -> Option<String> {
 
     // Extract theme name from path
     // Path might be like: /home/user/.config/omarchy/themes/tokyo-night/theme
-    // Or: /home/user/.config/omarchy/themes/catppuccin-mocha
+    // Or: /home/user/.config/omarchy/themes//nord (note: double slash possible)
     let path_str = resolved.to_string_lossy();
 
     // Try to find theme name in path
-    if path_str.contains("omarchy/themes/") {
-        let parts: Vec<&str> = path_str.split("omarchy/themes/").collect();
+    if path_str.contains("omarchy/themes") {
+        let parts: Vec<&str> = path_str.split("omarchy/themes").collect();
         if parts.len() > 1 {
             let theme_part = parts[1];
-            // Get the first directory/file name after themes/
-            let theme_name = theme_part.split('/').next()?;
+            // Get the first non-empty directory/file name after themes/
+            // Filter out empty strings from double slashes
+            let theme_name = theme_part
+                .split('/')
+                .filter(|s| !s.is_empty())
+                .next()?;
             return Some(theme_name.to_string());
         }
     }
