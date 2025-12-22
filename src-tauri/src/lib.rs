@@ -7,6 +7,7 @@ use tauri::{
     tray::TrayIconBuilder,
     AppHandle, Manager,
 };
+use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Note {
@@ -336,6 +337,19 @@ pub fn run() {
                     }
                 })
                 .build(app)?;
+
+            // Register global shortcut Super+N to toggle window
+            let shortcut = Shortcut::new(Some(Modifiers::SUPER), Code::KeyN);
+            app.global_shortcut().on_shortcut(shortcut, |app, _shortcut, _event| {
+                if let Some(window) = app.get_webview_window("main") {
+                    if window.is_visible().unwrap_or(false) {
+                        window.hide().ok();
+                    } else {
+                        window.show().ok();
+                        window.set_focus().ok();
+                    }
+                }
+            })?;
 
             Ok(())
         })

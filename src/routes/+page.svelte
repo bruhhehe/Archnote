@@ -23,6 +23,89 @@
   let textareaElement: HTMLTextAreaElement;
   let saveTimeout: ReturnType<typeof setTimeout> | null = null;
   let isDragging = $state(false);
+  let editorMode = $state<'edit' | 'view'>('edit');
+
+  // Checklist regex patterns
+  const checkboxPattern = /^(\s*)\[([ xX])\]\s?(.*)$/;
+
+  // Parse content into lines with checkbox info
+  function parseLines(content: string): Array<{text: string, isCheckbox: boolean, checked: boolean, indent: string, label: string, lineIndex: number}> {
+    return content.split('\n').map((line, lineIndex) => {
+      const match = line.match(checkboxPattern);
+      if (match) {
+        return {
+          text: line,
+          isCheckbox: true,
+          checked: match[2].toLowerCase() === 'x',
+          indent: match[1],
+          label: match[3],
+          lineIndex
+        };
+      }
+      return {
+        text: line,
+        isCheckbox: false,
+        checked: false,
+        indent: '',
+        label: line,
+        lineIndex
+      };
+    });
+  }
+
+  // Toggle checkbox at line index
+  function toggleCheckbox(lineIndex: number) {
+    if (!currentNote) return;
+
+    const lines = currentNote.content.split('\n');
+    const line = lines[lineIndex];
+    const match = line.match(checkboxPattern);
+
+    if (match) {
+      const indent = match[1];
+      const checked = match[2].toLowerCase() === 'x';
+      const label = match[3];
+      lines[lineIndex] = `${indent}[${checked ? ' ' : 'x'}] ${label}`;
+      currentNote.content = lines.join('\n');
+      debouncedSave(currentNote.content);
+    }
+  }
+
+  // Insert checkbox at cursor or current line
+  function insertCheckbox() {
+    if (!textareaElement || !currentNote) return;
+
+    const start = textareaElement.selectionStart;
+    const end = textareaElement.selectionEnd;
+    const content = currentNote.content;
+
+    // Find the start of the current line
+    let lineStart = start;
+    while (lineStart > 0 && content[lineStart - 1] !== '\n') {
+      lineStart--;
+    }
+
+    // Check if line already has a checkbox
+    const lineEnd = content.indexOf('\n', start);
+    const line = content.substring(lineStart, lineEnd === -1 ? content.length : lineEnd);
+
+    if (checkboxPattern.test(line)) {
+      // Already a checkbox, just focus
+      return;
+    }
+
+    // Insert checkbox at start of line
+    const before = content.substring(0, lineStart);
+    const after = content.substring(lineStart);
+    currentNote.content = before + '[ ] ' + after;
+    debouncedSave(currentNote.content);
+
+    // Move cursor after checkbox
+    setTimeout(() => {
+      textareaElement.selectionStart = textareaElement.selectionEnd = lineStart + 4;
+      textareaElement.focus();
+    }, 0);
+  }
 
   // Debounced save
   function debouncedSave(content: string) {
@@ -375,6 +458,7 @@
         </div>
         <div class="shortcuts-section">
           <div class="shortcuts-title">Keyboard shortcuts</div>
+          <div class="shortcut-row"><kbd>Super+N</kbd> Show/hide</div>
           <div class="shortcut-row"><kbd>Ctrl+N</kbd> New note</div>
           <div class="shortcut-row"><kbd>Ctrl+W</kbd> Delete note</div>
           <div class="shortcut-row"><kbd>Ctrl+←/→</kbd> Navigate</div>

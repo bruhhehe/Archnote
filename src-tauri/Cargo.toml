@@ -1,8 +1,8 @@
 [package]
 name = "archnote"
-version = "0.1.0"
+version = "0.2.0"
 description = "A beautiful scratchpad note-taking app for Arch Linux"
-authors = ["you"]
+authors = ["Danny McClelland <danny@dmcc.io>"]
 edition = "2021"
 
 [lib]
