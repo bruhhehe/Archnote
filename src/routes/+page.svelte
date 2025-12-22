@@ -630,7 +630,7 @@
 
   /* Theme selector */
   .theme-selector {
-    width: 280px;
+    width: 340px;
   }
 
   .theme-grid {
@@ -639,7 +639,7 @@
     gap: 8px;
     padding: 12px;
     overflow-y: auto;
-    max-height: 300px;
+    max-height: 400px;
   }
 
   .theme-option {

@@ -17,20 +17,31 @@ A beautiful, minimal scratchpad note-taking app for Arch Linux with native Omarc
 
 ## Installation
 
-### Prerequisites (Arch Linux)
+### From AUR (Recommended)
 
 ```bash
-# Install required system dependencies
-sudo pacman -S webkit2gtk-4.1 gtk3 cairo gdk-pixbuf2 glib2 base-devel
+# Using yay
+yay -S archnote
 
-# Install Rust if not already installed
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+# Using paru
+paru -S archnote
 
-# Install Node.js (or use your preferred method)
-sudo pacman -S nodejs npm
+# Manual AUR installation
+git clone https://aur.archlinux.org/archnote.git
+cd archnote
+makepkg -si
 ```
 
 ### Build from Source
+
+#### Prerequisites
+
+```bash
+# Install required system dependencies
+sudo pacman -S webkit2gtk-4.1 gtk3 cairo gdk-pixbuf2 glib2 base-devel rust nodejs npm
+```
+
+#### Build
 
 ```bash
 # Clone the repository
