@@ -279,13 +279,6 @@ fn get_always_on_top(state: tauri::State<AppStateWrapper>) -> bool {
     state.0.lock().unwrap().always_on_top
 }
 
-#[tauri::command]
-fn close_window(app: AppHandle) {
-    if let Some(window) = app.get_webview_window("main") {
-        window.hide().ok();
-    }
-}
-
 fn show_main_window(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
         window.unminimize().ok();
@@ -367,16 +360,6 @@ pub fn run() {
 
             Ok(())
         })
-        // Closing the window (e.g. via the compositor's close keybinding) hides
-        // it to the tray instead of destroying it, so it can be shown again.
-        .on_window_event(|window, event| {
-            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                if window.label() == "main" {
-                    api.prevent_close();
-                    window.hide().ok();
-                }
-            }
-        })
         .invoke_handler(tauri::generate_handler![
             get_state,
             get_notes,
@@ -393,7 +376,6 @@ pub fn run() {
             get_use_omarchy_theme,
             toggle_always_on_top,
             get_always_on_top,
-            close_window,
             minimize_window,
             is_omarchy_installed,
             get_omarchy_theme,

@@ -10,7 +10,7 @@ A beautiful, minimal scratchpad note-taking app for Arch Linux with native Omarc
 - **Live Theme Sync** - Polls for Omarchy theme changes every 2 seconds
 - **Plain Text** - Formatting stripped on paste for clean notes
 - **Auto-Save** - Notes saved automatically as you type
-- **System Tray** - Runs in background, click tray icon to show/hide
+- **System Tray** - Click the tray icon to show/hide; closing the window quits
 - **Single Instance** - Launching Archnote again brings up the existing window
 - **Pin to Top** - Keep Archnote above other windows
 - **Keyboard Shortcuts** - Fast navigation and control
@@ -95,11 +95,12 @@ npm run tauri dev
 
 ## Window Behavior
 
-- **Closing** the window (✕ button or your compositor's close key) hides it to the
-  system tray. Archnote keeps running so you can bring it back instantly.
-- **Reopen** it by clicking the tray icon, choosing *Show Archnote*, pressing
-  `Super+N`, or just launching Archnote again.
-- **Quit** completely with *Quit Archnote* in the tray menu.
+- **Closing** the window (✕ button or your compositor's close key) quits Archnote
+  completely, so it doesn't use any memory in the background. Unsaved typing is
+  saved first.
+- **Hiding** instead: click the tray icon or press `Super+N` to hide it while
+  keeping it running, and do the same to bring it back.
+- Launching Archnote while it's already running shows the existing window.
 - **Move** the window by dragging the title bar.
 
 ### Hyprland / Omarchy

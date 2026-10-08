@@ -111,10 +111,21 @@
   function debouncedSave(content: string) {
     if (saveTimeout) clearTimeout(saveTimeout);
     saveTimeout = setTimeout(async () => {
+      saveTimeout = null;
       if (currentNote) {
         await invoke("update_note", { id: currentNote.id, content });
       }
     }, 300);
+  }
+
+  // Write any pending debounced save immediately
+  async function flushSave() {
+    if (!saveTimeout) return;
+    clearTimeout(saveTimeout);
+    saveTimeout = null;
+    if (currentNote) {
+      await invoke("update_note", { id: currentNote.id, content: currentNote.content });
+    }
   }
 
   // Handle content change
@@ -223,8 +234,9 @@
     await invoke("minimize_window");
   }
 
+  // Closing quits the app (the close-requested handler saves first)
   async function closeWindow() {
-    await invoke("close_window");
+    await getCurrentWindow().close();
   }
 
   // Drag window
@@ -304,6 +316,16 @@
   let themePollingInterval: ReturnType<typeof setInterval>;
 
   onMount(async () => {
+    // Save pending edits before the window closes (✕ button or compositor close).
+    // Closing the window quits the app.
+    getCurrentWindow().onCloseRequested(async () => {
+      try {
+        await flushSave();
+      } catch (e) {
+        console.error("Failed to save before closing", e);
+      }
+    });
+
     // Load initial state
     await loadNotes();
     currentNote = await invoke<Note | null>("get_current_note");
