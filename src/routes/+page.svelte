@@ -228,9 +228,11 @@
   }
 
   // Drag window
-  async function startDrag() {
-    const window = getCurrentWindow();
-    await window.startDragging();
+  async function startDrag(e: MouseEvent) {
+    // Only drag with the primary button, and not when clicking a titlebar button
+    if (e.button !== 0 || (e.target as HTMLElement).closest("button")) return;
+    e.preventDefault();
+    await getCurrentWindow().startDragging();
   }
 
   // Keyboard shortcuts

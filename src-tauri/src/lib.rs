@@ -7,7 +7,7 @@ use tauri::{
     tray::TrayIconBuilder,
     AppHandle, Manager,
 };
-use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut};
+use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Note {
@@ -286,6 +286,14 @@ fn close_window(app: AppHandle) {
     }
 }
 
+fn show_main_window(app: &AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        window.unminimize().ok();
+        window.show().ok();
+        window.set_focus().ok();
+    }
+}
+
 #[tauri::command]
 fn minimize_window(app: AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
@@ -298,6 +306,12 @@ pub fn run() {
     let state = load_state();
 
     tauri::Builder::default()
+        // Must be registered first: relaunching Archnote while it is already
+        // running (e.g. hidden in the tray) shows the existing window instead
+        // of starting a second process.
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            show_main_window(app);
+        }))
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_fs::init())
@@ -315,12 +329,7 @@ pub fn run() {
                     "quit" => {
                         app.exit(0);
                     }
-                    "show" => {
-                        if let Some(window) = app.get_webview_window("main") {
-                            window.show().ok();
-                            window.set_focus().ok();
-                        }
-                    }
+                    "show" => show_main_window(app),
                     _ => {}
                 })
                 .on_tray_icon_event(|tray, event| {
@@ -330,8 +339,7 @@ pub fn run() {
                             if window.is_visible().unwrap_or(false) {
                                 window.hide().ok();
                             } else {
-                                window.show().ok();
-                                window.set_focus().ok();
+                                show_main_window(app);
                             }
                         }
                     }
@@ -340,18 +348,34 @@ pub fn run() {
 
             // Register global shortcut Super+N to toggle window
             let shortcut = Shortcut::new(Some(Modifiers::SUPER), Code::KeyN);
-            app.global_shortcut().on_shortcut(shortcut, |app, _shortcut, _event| {
+            // Not fatal: the shortcut may be unavailable (e.g. already grabbed,
+            // or unsupported on Wayland compositors).
+            if let Err(e) = app.global_shortcut().on_shortcut(shortcut, |app, _shortcut, event| {
+                if event.state() != ShortcutState::Pressed {
+                    return;
+                }
                 if let Some(window) = app.get_webview_window("main") {
                     if window.is_visible().unwrap_or(false) {
                         window.hide().ok();
                     } else {
-                        window.show().ok();
-                        window.set_focus().ok();
+                        show_main_window(app);
                     }
                 }
-            })?;
+            }) {
+                eprintln!("Failed to register global shortcut Super+N: {e}");
+            }
 
             Ok(())
+        })
+        // Closing the window (e.g. via the compositor's close keybinding) hides
+        // it to the tray instead of destroying it, so it can be shown again.
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                if window.label() == "main" {
+                    api.prevent_close();
+                    window.hide().ok();
+                }
+            }
         })
         .invoke_handler(tauri::generate_handler![
             get_state,
